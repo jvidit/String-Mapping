@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <map>
 #include <random>
+#include <ctime>
 
 using namespace std;
 
@@ -20,8 +21,16 @@ int cost_bound=INT_MAX;
 int CC;
 map<char,int> charIndex;
 int costArr[30][30];   
+double timeLimit;
+double beginTime;
+double timeThreshold=pow(10,6);
 
 
+
+//returns false if time is about to end
+bool remTime();
+
+//takes input
 vector<string> callParser();
 
 //pre-processing, returns number of dashses inserted
@@ -51,6 +60,8 @@ void pr(vector<string>);
 
 int main(int argc, char*argv[])
 {
+
+	beginTime = clock();
 	freopen (argv[1],"r",stdin);
     freopen (argv[2],"w",stdout);
 
@@ -67,36 +78,48 @@ int main(int argc, char*argv[])
 
     for(int i = maxLength;i<=totLength;i++)
     {
+
+    	double bestLCost = -1,totLcost = 0;
     	for(int j = 0;j<restarts;j++)
     	{
 
     		pair<int,vector<string> > initialState = completeDashesRandomized(dataset,i);
     		//pr(initialState.second);
-
+    		
     		while(minNeighbour(initialState.second))
     			;
 
+
+    		if(!remTime())
+    			break;
+
     		int totCost = initialState.first*CC + calcCost(initialState.second);
 
-    		//cout<<totCost<<endl;
-    		//pr(initialState.second);
-    		//cout<<endl<<endl<<endl;
 
 
     		if(bestCost==-1 || bestCost>totCost)
     		{
     			bestCost = totCost;
     			bestSet = initialState.second;
-    			cout<<bestCost<<endl;
-    			pr(bestSet);
-    			cout<<endl<<endl;
+    			//cout<<bestCost<<endl;
+    			//pr(bestSet);
+    			//cout<<endl<<endl;
     		}
+
+    		// if(bestLCost==-1 || bestLCost>totCost)
+    		// 	bestLCost=totCost;
+    		// totLcost+=(double)totCost/restarts;
     	}
+
+    	if(!remTime())
+    		break;
+    	//cout<<i<<" "<<totLcost<<" "<<bestLCost<<endl<<endl;
     }
 
     
 
     //cout<<calcCost(dataset)+DashInsertionCost<<endl;
+    cout<<"Time taken "<<(clock()-beginTime)/pow(10,6)<<" secs\n";
     cout<<bestCost<<endl;
     pr(bestSet);
     
@@ -135,6 +158,9 @@ void pr(vector<string> v)
 
 int minNeighbour(vector<string>& v)
 {
+	if(!remTime())
+		return 0;
+
 	int stringIndex=-1, switchIndex = -1, diff = 0,temp;
 	for(int i=0;i<v.size();i++)
 	{
@@ -185,9 +211,7 @@ int minNeighbour(vector<string>& v)
 
 int getDifference(vector<string> v, int stringIndex, int switchIndex)
 {
-	if(switchIndex==-1)
-		return 0;
-
+	
 	int diff = 0;
 
 	
@@ -293,9 +317,9 @@ vector<string> callParser()
 	
   
      //taking input
-   float time;
    int V,k;
-   cin>>time;
+   cin>>timeLimit;
+   timeLimit*=60*pow(10,6);
 
    cin>>V;
    
@@ -331,8 +355,6 @@ vector<string> callParser()
 
 
 
-
-
 int getMaxLength(vector<string> v)
 {
 	unsigned long ans = 0;
@@ -350,26 +372,13 @@ int getTotLength(vector<string> v)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+bool remTime()
+{
+	double currentTime = clock()-beginTime;
+	if(timeLimit-currentTime<=timeThreshold)
+		return false;
+	return true;
+}
 
 
 
