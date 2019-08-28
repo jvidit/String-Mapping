@@ -29,6 +29,8 @@ int completeDashes(vector<string>&,int);
 
 pair<int,vector<string> > completeDashesRandomized(vector<string>, int);
 
+int getMaxLength(vector<string>);
+int getTotLength(vector<string>);
 
 //gets cost of a state
 int calcCost(vector<string>);
@@ -54,29 +56,51 @@ int main(int argc, char*argv[])
 
     vector<string> dataset=callParser();
 
-    int length = 15;
-
-
-    for(int i=0;i<5;i++)
-    {
-    	pair <int,vector<string> > initialState = completeDashesRandomized(dataset, length);
-    	int DashInsertionCost = CC*initialState.first;
-
-    	
-    }
-    return 0;
-
-    int count = 0;
-
-    while(minNeighbour(dataset))
-    	count++;
-
-    cout<<count<<endl;
-
-    cout<<calcCost(dataset)+DashInsertionCost<<endl;
-    pr(dataset);
+    int restarts = 5000;
+    int maxLength = getMaxLength(dataset);
+    int totLength = getTotLength(dataset);
     
-    // return 0;
+
+    vector<string> bestSet=dataset;
+    int bestCost = -1;
+
+
+    for(int i = maxLength;i<=totLength;i++)
+    {
+    	for(int j = 0;j<restarts;j++)
+    	{
+
+    		pair<int,vector<string> > initialState = completeDashesRandomized(dataset,i);
+    		//pr(initialState.second);
+
+    		while(minNeighbour(initialState.second))
+    			;
+
+    		int totCost = initialState.first*CC + calcCost(initialState.second);
+
+    		//cout<<totCost<<endl;
+    		//pr(initialState.second);
+    		//cout<<endl<<endl<<endl;
+
+
+    		if(bestCost==-1 || bestCost>totCost)
+    		{
+    			bestCost = totCost;
+    			bestSet = initialState.second;
+    			cout<<bestCost<<endl;
+    			pr(bestSet);
+    			cout<<endl<<endl;
+    		}
+    	}
+    }
+
+    
+
+    //cout<<calcCost(dataset)+DashInsertionCost<<endl;
+    cout<<bestCost<<endl;
+    pr(bestSet);
+    
+    return 0;
 }
 
 
@@ -118,20 +142,27 @@ int minNeighbour(vector<string>& v)
 		{
 			if(v[i][j]=='-')
 			{
-				temp = getDifference(v,i,j);
-				if(temp<diff)							
+				if(j<v[0].size()-1 && v[i][j+1]!='-')
 				{
-					diff = temp;
-					stringIndex=i;
-					switchIndex=j;					
+					temp = getDifference(v,i,j);
+					if(temp<diff)							
+					{
+						diff = temp;
+						stringIndex=i;
+						switchIndex=j;					
+					}
 				}
 
-				temp = getDifference(v,i,j-1);
-				if(temp<diff)							//note switch index can be -1, and matters when temp<=diff
+				if(j>0 && v[i][j-1]!='-')
 				{
-					diff = temp;
-					stringIndex=i;
-					switchIndex=j-1;					
+					temp = getDifference(v,i,j-1);
+				
+					if(temp<diff)							
+					{
+						diff = temp;
+						stringIndex=i;
+						switchIndex=j-1;					
+					}
 				}
 
 			}
@@ -205,15 +236,16 @@ pair<int,vector<string> > completeDashesRandomized(vector<string> v, int length)
     {
         int deficit = length-v[i].size();
         totDashes+=deficit;
+
         
         random_shuffle(gen.begin(),gen.end());
-        sort(gen.begin(),gen.begin()+deficit);
+        sort(gen.begin(),gen.begin()+deficit+1);
         
         int ind1=0,ind2=0;
         string s="";
         while(ind1+ind2<length)
         {
-            if(ind1+ind2==gen[ind2])
+            if(ind1+ind2==gen[ind2] && ind2<deficit)
             {
                 s+="-";
                 ind2++;
@@ -301,9 +333,21 @@ vector<string> callParser()
 
 
 
+int getMaxLength(vector<string> v)
+{
+	unsigned long ans = 0;
+	for(int i=0;i<v.size();i++)
+		ans=max(ans,v[i].size());
+	return (int)ans;
+}
 
-
-
+int getTotLength(vector<string> v)
+{
+	unsigned long ans = 0;
+	for(int i=0;i<v.size();i++)
+		ans+=v[i].size();
+	return (int)ans;
+}
 
 
 
