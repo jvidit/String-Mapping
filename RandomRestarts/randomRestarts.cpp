@@ -26,36 +26,40 @@ double beginTime;
 double timeThreshold=pow(10,6);
 
 
+int bestMargin = 2;
+int bestPercentage = 10;
+
+
 
 //returns false if time is about to end
 bool remTime();
-
 //takes input
 vector<string> callParser();
 
+
+
+
 //pre-processing, returns number of dashses inserted
 int completeDashes(vector<string>&,int);
-
 pair<int,vector<string> > completeDashesRandomized(vector<string>, int);
 
-int getMaxLength(vector<string>);
-int getTotLength(vector<string>);
-
-//gets cost of a state
-int calcCost(vector<string>);
 
 
 //cost calculation for a neighbour
 int getDifference(vector<string>, int, int);
-
 //turns input into its nearest neighbour, if possible. returns 1 or 0. 
 int minNeighbour(vector<string>&);
 
 
+
+
 void pr(vector<string>);
+int calcCost(vector<string>);			//gets cost of a state
+int getMaxLength(vector<string>);
+int getTotLength(vector<string>);
+vector<int> getBestLengths(vector<int> v, int minLength);
 
 
-//void localSearch(vector<string>&);
 
 
 int main(int argc, char*argv[])
@@ -67,20 +71,28 @@ int main(int argc, char*argv[])
 
     vector<string> dataset=callParser();
 
-    int restarts = 5000;
     int maxLength = getMaxLength(dataset);
     int totLength = getTotLength(dataset);
-    
 
-    vector<string> bestSet=dataset;
+	vector<string> bestSet=dataset;
     int bestCost = -1;
+
+
+    int restartsL1 = 50;
+
+
+
+    
+    vector<int> baseLengths;
+
+    
 
 
     for(int i = maxLength;i<=totLength;i++)
     {
 
     	double bestLCost = -1,totLcost = 0;
-    	for(int j = 0;j<restarts;j++)
+    	for(int j = 0;j<restartsL1;j++)
     	{
 
     		pair<int,vector<string> > initialState = completeDashesRandomized(dataset,i);
@@ -101,26 +113,68 @@ int main(int argc, char*argv[])
     		{
     			bestCost = totCost;
     			bestSet = initialState.second;
-    			//cout<<bestCost<<endl;
-    			//pr(bestSet);
-    			//cout<<endl<<endl;
+    			cout<<bestCost<<endl;
+    			pr(bestSet);
+    			cout<<endl<<endl;
     		}
 
-    		// if(bestLCost==-1 || bestLCost>totCost)
-    		// 	bestLCost=totCost;
-    		// totLcost+=(double)totCost/restarts;
+    		if(bestLCost==-1 || bestLCost>totCost)
+    			bestLCost=totCost;
+    		//totLcost+=(double)totCost/restarts;
     	}
+
+    	baseLengths.push_back(bestLCost);
 
     	if(!remTime())
     		break;
     	//cout<<i<<" "<<totLcost<<" "<<bestLCost<<endl<<endl;
     }
 
+
+    vector<int> bestLengths = getBestLengths(baseLengths,maxLength);
+
+
+    while(true)
+    {
+    	for(int i = 0;i<bestLengths.size();i++)
+    	{
+    		pair<int,vector<string> > initialState = completeDashesRandomized(dataset,bestLengths[i]);
+    		//pr(initialState.second);
+    		
+    		while(minNeighbour(initialState.second))
+    			;
+
+
+    		if(!remTime())
+    			break;
+
+    		int totCost = initialState.first*CC + calcCost(initialState.second);
+
+
+
+    		if(bestCost==-1 || bestCost>totCost)
+    		{
+    			bestCost = totCost;
+    			bestSet = initialState.second;
+    			cout<<bestCost<<endl;
+    			pr(bestSet);
+    			cout<<endl<<endl;
+    		}
+
+    
+    		if(!remTime())
+    			break;
+    	}
+    	if(!remTime())
+    			break;
+    }
+
+
     
 
     //cout<<calcCost(dataset)+DashInsertionCost<<endl;
-    cout<<"Time taken "<<(clock()-beginTime)/pow(10,6)<<" secs\n";
-    cout<<bestCost<<endl;
+    //cout<<"Time taken "<<(clock()-beginTime)/pow(10,6)<<" secs\n";
+    // cout<<bestCost<<endl;
     pr(bestSet);
     
     return 0;
@@ -379,6 +433,50 @@ bool remTime()
 		return false;
 	return true;
 }
+
+
+
+vector<int> getBestLengths(vector<int> v, int minLength)
+{
+    vector<pair<int,int> > temp;
+    for(int i=0;i<v.size();i++)
+        temp.push_back(make_pair(v[i],i));
+    sort(temp.begin(),temp.end());
+    
+    vector<int> ans;
+    for(int i=0;i<=(bestPercentage*v.size())/100;i++)
+    {
+        for(int j=-bestMargin;j<=bestMargin;j++)
+        {
+            int toBePushed = max(min(temp[i].second + j,(int)v.size()),0);
+            ans.push_back(toBePushed+minLength);
+        }
+    }
+    
+    sort(ans.begin(),ans.end());
+    vector<int>::iterator ip;
+    ip = unique(ans.begin(), ans.end());
+    ans.resize(distance(ans.begin(), ip));
+    return ans;    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
